@@ -1,29 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
-	<bean id="processDocPE" class="io.s4.meter.controller.plugin.randomdoc.ProcessDocPE">
-		<property name="id" value="processDocPE" />
-		<property name="keys">
-			<list>
-				<value>RawDoc *</value>
-			</list>
-		</property>
-		<property name="dispatcher" ref="appDispatcher" />
-		<property name="outputStreamName" value="Words" />
-	</bean>
+    <bean id="checkpointsDumperPE" class="io.s4.meter.controller.plugin.wordcountdump.WordCountDumperPE">
+        <property name="id" value="wordCountDumperPE" />
+        <property name="keys">
+            <list>
+                <value>CheckpointsDump *</value>
+            </list>
+        </property>
+        <property name="outputStreamName" value="Words_broadcast" />
+        <property name="dispatcher" ref="broadcastDispatcher"/>
+        <property name="dumpFilePath" value="dump.txt"/>
+    </bean>
 
-	<bean id="wordCounterPE" class="io.s4.meter.controller.plugin.randomdoc.WordCounterPE">
-		<property name="id" value="wordCounterPE" />
-		<property name="keys">
-			<list>
-				<value>Words word</value>
-			</list>
-		</property>
-		<property name="outputFrequencyByEventCount" value="1"/>
-		
-	</bean>
+    <bean id="processDocPE" class="io.s4.meter.controller.plugin.randomdoc.ProcessDocPE">
+        <property name="id" value="processDocPE" />
+        <property name="keys">
+            <list>
+                <value>RawDoc *</value>
+            </list>
+        </property>
+        <property name="dispatcher" ref="appDispatcher" />
+        <property name="outputStreamName" value="Words" />
+    </bean>
+
+    <bean id="wordCounterPE" class="io.s4.meter.controller.plugin.randomdoc.WordCounterPE">
+        <property name="id" value="wordCounterPE" />
+        <property name="keys">
+            <list>
+                <value>Words word</value>
+                <value>Words_broadcast *</value>
+            </list>
+        </property>
+        <property name="outputFrequencyByEventCount" value="1"/>
+    </bean>
 
 <bean id="wordPartitioner" class="io.s4.dispatcher.partitioner.DefaultPartitioner">
     <property name="streamNames">
@@ -39,11 +51,23 @@
     <property name="hasher" ref="hasher"/>
     <property name="debug" value="false"/>
   </bean>
+  
+  <bean id="broadcastPartitioner" class="io.s4.dispatcher.partitioner.BroadcastPartitioner"/>
 
   <bean id="appDispatcher" class="io.s4.dispatcher.Dispatcher" init-method="init">
     <property name="partitioners">
       <list>
         <ref bean="wordPartitioner"/>
+      </list>
+    </property>
+    <property name="eventEmitter" ref="commLayerEmitter"/>
+    <property name="loggerName" value="s4"/>
+  </bean>
+  
+  <bean id="broadcastDispatcher" class="io.s4.dispatcher.Dispatcher" init-method="init">
+    <property name="partitioners">
+      <list>
+        <ref bean="broadcastPartitioner"/>
       </list>
     </property>
     <property name="eventEmitter" ref="commLayerEmitter"/>
